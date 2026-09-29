@@ -1,4 +1,7 @@
-param([Parameter(Mandatory=$true)][string]$Root)
+param(
+  [Parameter(Mandatory=$true)][string]$Root,
+  [Parameter(Mandatory=$true)][string]$DbPassword
+)
 
 $ErrorActionPreference = 'Stop'
 $rootPath = (Resolve-Path -LiteralPath $Root).Path
@@ -196,7 +199,7 @@ function Invoke-DailyMaintenance {
   $lastDate = if (Test-Path -LiteralPath $lastDateFile) { Get-Content -LiteralPath $lastDateFile | Select-Object -First 1 } else { '' }
   if ((Get-Date).Hour -ge 2 -and $lastDate -ne $today -and (Test-Path -LiteralPath $backupScript)) {
     try {
-      & powershell -NoProfile -ExecutionPolicy Bypass -File $backupScript -Root $rootPath | Out-Null
+      & $backupScript -Root $rootPath -DbPassword $DbPassword | Out-Null
       if ($LASTEXITCODE -eq 0) {
         Set-Content -LiteralPath $lastDateFile -Value $today -Encoding ASCII
         Write-Log 'Daily database backup completed.'
