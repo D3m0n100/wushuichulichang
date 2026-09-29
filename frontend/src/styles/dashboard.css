@@ -1,0 +1,55 @@
+body {
+  margin: 0;
+  font-family: 'Microsoft YaHei', 'Source Han Sans SC', sans-serif;
+  background-color: var(--color-bg-deep);
+  color: #F2F3F5;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--color-primary), var(--color-secondary));
+  border-radius: 3px;
+}
+
+.middle-placeholder {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  background: rgba(0, 10, 25, 0.7);
+  backdrop-filter: none;
+  padding: 8px 20px;
+  border-radius: var(--radius-pill);
+  width: fit-content;
+  margin: 0 auto;
+  z-index: 10;
+  border: var(--border-subtle);
+}
+
+.three-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+  background: transparent;
+}
+
+.pump-control {
+  position: absolute;
+  bottom: 20px;
+  z-index: 10;
+}

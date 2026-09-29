@@ -1,0 +1,957 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>B1 H1 M3 S7 联调测试台</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #07111d;
+            --panel: rgba(11, 23, 40, 0.94);
+            --panel-soft: rgba(9, 18, 31, 0.82);
+            --line: rgba(61, 180, 255, 0.30);
+            --text: #dcefff;
+            --muted: #91aac8;
+            --accent: #49d2ff;
+            --good: #27d88a;
+            --warn: #f7c74b;
+            --bad: #ff687e;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top, rgba(73, 210, 255, 0.16), transparent 26%),
+                linear-gradient(180deg, #08131f 0%, var(--bg) 100%);
+        }
+        .page {
+            width: min(1680px, calc(100vw - 28px));
+            margin: 0 auto;
+            padding: 18px 0 28px;
+        }
+        .hero, .panel {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: inset 0 0 24px rgba(40, 150, 235, 0.08), 0 0 18px rgba(0, 0, 0, 0.18);
+        }
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 18px 20px;
+        }
+        .hero h1 { margin: 0; font-size: 30px; letter-spacing: 1px; }
+        .hero p { margin: 8px 0 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+        .hero-meta { min-width: 320px; display: grid; gap: 10px; }
+        .hero-meta-item {
+            padding: 10px 12px;
+            border: 1px solid rgba(61, 180, 255, 0.18);
+            background: rgba(7, 17, 30, 0.85);
+        }
+        .hero-meta-item span {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: 380px minmax(520px, 1fr) 430px;
+            gap: 14px;
+            margin-top: 14px;
+        }
+        .panel { padding: 14px; min-width: 0; }
+        .panel h2 { margin: 0 0 12px; font-size: 18px; color: #f2fbff; }
+        .section { margin-top: 14px; }
+        .hint { color: var(--muted); font-size: 12px; line-height: 1.6; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; }
+        input, select, textarea, button {
+            width: 100%;
+            border: 1px solid rgba(61, 180, 255, 0.28);
+            background: rgba(5, 15, 28, 0.92);
+            color: var(--text);
+            outline: none;
+            font-family: inherit;
+        }
+        input, select, textarea { padding: 9px 10px; }
+        textarea { min-height: 220px; resize: vertical; line-height: 1.45; }
+        button {
+            width: auto;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            background: linear-gradient(180deg, rgba(29, 128, 191, 0.96), rgba(10, 73, 116, 0.96));
+        }
+        button.secondary { background: rgba(18, 37, 59, 0.96); }
+        button.warn {
+            border-color: rgba(247, 199, 75, 0.55);
+            background: rgba(106, 77, 10, 0.94);
+        }
+        button:disabled { opacity: 0.45; cursor: not-allowed; }
+        .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .meta-grid, .cards { display: grid; gap: 10px; }
+        .meta-grid { grid-template-columns: 1fr 1fr; }
+        .meta-card, .data-card {
+            border: 1px solid rgba(61, 180, 255, 0.22);
+            background: var(--panel-soft);
+            padding: 12px;
+            min-width: 0;
+        }
+        .meta-card span, .data-card span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        .cards.devices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .cards.parameters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .data-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .code { color: var(--accent); font-size: 12px; font-family: Consolas, monospace; }
+        .pair-list {
+            display: grid;
+            grid-template-columns: minmax(88px, 38%) minmax(0, 1fr);
+            gap: 6px 10px;
+            font-size: 13px;
+        }
+        .pair-list div:nth-child(odd) { color: var(--muted); }
+        .pair-list div:nth-child(even) {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            font-family: Consolas, "Microsoft YaHei", sans-serif;
+        }
+        .value-true { color: var(--good); font-weight: 800; }
+        .value-false { color: var(--bad); font-weight: 800; }
+        .value-null { color: var(--warn); }
+        .value-changed {
+            position: relative;
+            color: #ffffff;
+            background: linear-gradient(90deg, rgba(255, 193, 7, 0.22), rgba(255, 120, 60, 0.22));
+            box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.65), 0 0 18px rgba(255, 166, 0, 0.2);
+            border-radius: 6px;
+            padding: 3px 8px;
+            animation: valuePulse 1.4s ease-out;
+        }
+        .value-changed::after {
+            content: "CHANGED";
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 5px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #2f1600;
+            background: linear-gradient(180deg, #ffd36a, #ff9d2f);
+            vertical-align: middle;
+        }
+        .card-changed {
+            border-color: rgba(255, 196, 72, 0.82);
+            box-shadow: inset 0 0 0 1px rgba(255, 196, 72, 0.34), 0 0 24px rgba(255, 166, 0, 0.16);
+        }
+        @keyframes valuePulse {
+            0% { background: rgba(255, 196, 72, 0.38); box-shadow: inset 0 0 0 1px rgba(255, 214, 109, 0.95), 0 0 0 0 rgba(255, 166, 0, 0.36); }
+            100% { background: rgba(255, 196, 72, 0.18); box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.62), 0 0 0 12px rgba(255, 166, 0, 0); }
+        }
+        .change-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .change-filter {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text);
+            font-size: 13px;
+        }
+        .change-filter input {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+        }
+        .change-summary {
+            color: #ffd36a;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .change-feed {
+            display: grid;
+            gap: 8px;
+            max-height: 280px;
+            overflow: auto;
+        }
+        .change-item {
+            border: 1px solid rgba(255, 196, 72, 0.4);
+            background: rgba(255, 166, 0, 0.08);
+            padding: 10px;
+        }
+        .change-item-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+            color: #fff4cf;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .change-item-meta {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .change-empty {
+            color: var(--muted);
+            font-size: 12px;
+            padding: 8px 0;
+        }
+        @media (max-width: 1480px) {
+            .layout { grid-template-columns: 1fr; }
+            .cards.devices, .cards.parameters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (max-width: 900px) {
+            .hero { flex-direction: column; }
+            .hero-meta { min-width: 0; }
+            .cards.devices, .cards.parameters { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="hero">
+        <div>
+            <h1>B1 / H1 / M3 S7 联调测试台</h1>
+            <p>单独用于 B1、H1、M3 的结构化 DB 点位联调。保留动作命令、手自动写入、频率设定和参数写入。</p>
+        </div>
+        <div class="hero-meta">
+            <div class="hero-meta-item">
+                <span>当前模块</span>
+                <strong id="activeModuleText">-</strong>
+            </div>
+            <div class="hero-meta-item">
+                <span>轮询状态</span>
+                <strong id="pollingText">未启动</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <div>
+            <div class="panel">
+                <h2>联调入口</h2>
+                <div class="row">
+                    <div>
+                        <label for="moduleSelect">PLC 模块</label>
+                        <select id="moduleSelect"></select>
+                    </div>
+                    <div>
+                        <label for="pollInterval">轮询间隔(ms)</label>
+                        <input id="pollInterval" type="number" min="1000" step="100" value="5000">
+                    </div>
+                </div>
+                <div class="buttons">
+                    <button id="loadOverviewBtn">读取总览</button>
+                    <button id="startPollBtn" class="warn">启动轮询</button>
+                    <button id="stopPollBtn" class="secondary">停止轮询</button>
+                </div>
+                <div class="hint section">该页面只访问 `/api/plc/b1`、`/api/plc/h1`、`/api/plc/m3`。</div>
+            </div>
+
+            <div class="panel section">
+                <h2>设备控制</h2>
+                <label for="deviceCode">设备编码</label>
+                <select id="deviceCode">
+                    <option value="">请先读取总览后选择设备</option>
+                </select>
+                <div class="row section">
+                    <div>
+                        <label for="manualEnabled">手自动位</label>
+                        <select id="manualEnabled">
+                            <option value="false">0 / false</option>
+                            <option value="true">1 / true</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="pulseMs">脉冲时长(ms)</label>
+                        <input id="pulseMs" type="number" min="50" step="50" value="300">
+                    </div>
+                </div>
+                <label for="deviceAction">动作</label>
+                <select id="deviceAction">
+                    <option value="START">START - 启动</option>
+                    <option value="STOP">STOP - 停止</option>
+                    <option value="OPEN">OPEN - 开阀</option>
+                    <option value="CLOSE">CLOSE - 关阀</option>
+                </select>
+                <div class="buttons">
+                    <button id="readDeviceBtn" class="secondary">读取设备</button>
+                    <button id="writeManualBtn" class="secondary">写入手自动位</button>
+                    <button id="pulseBtn">发送动作</button>
+                </div>
+                <div id="commandStatus" class="hint section">动作接口保持原来的高级 PLC 方式。</div>
+            </div>
+
+            <div class="panel section">
+                <h2>频率写入</h2>
+                <label for="frequencyValue">频率设定值</label>
+                <input id="frequencyValue" type="number" step="0.1" placeholder="仅 H1 / M3 支持">
+                <div class="buttons">
+                    <button id="writeFrequencyBtn" class="warn">写入频率</button>
+                </div>
+            </div>
+
+            <div class="panel section">
+                <h2>参数写入</h2>
+                <label for="parameterCode">参数编码</label>
+                <select id="parameterCode">
+                    <option value="">请先读取总览后选择参数</option>
+                </select>
+                <div id="parameterNumberWrap" class="section">
+                    <label for="parameterValueNumber" id="parameterValueLabel">参数值</label>
+                    <input id="parameterValueNumber" type="number" step="0.1" placeholder="请输入数值">
+                </div>
+                <div id="parameterBoolWrap" class="section" style="display:none;">
+                    <label for="parameterValueBool">参数值</label>
+                    <select id="parameterValueBool">
+                        <option value="true">true / 1</option>
+                        <option value="false">false / 0</option>
+                    </select>
+                </div>
+                <div id="parameterMetaHint" class="hint section">请选择参数后写入。</div>
+                <div class="buttons">
+                    <button id="writeParameterBtn" disabled>写入参数</button>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <h2>PLC 元信息</h2>
+                <div class="meta-grid">
+                    <div class="meta-card"><span>PLC 名称</span><strong id="metaName">-</strong></div>
+                    <div class="meta-card"><span>系列</span><strong id="metaSeries">-</strong></div>
+                    <div class="meta-card"><span>IP</span><strong id="metaIp">-</strong></div>
+                    <div class="meta-card"><span>Rack / Slot</span><strong id="metaRackSlot">-</strong></div>
+                </div>
+            </div>
+            <div class="panel section">
+                <h2>设备列表</h2>
+                <div class="hint">优先显示实时值；总览为空时退回设备定义和地址。</div>
+                <div class="change-toolbar">
+                    <label class="change-filter" for="onlyChangedToggle">
+                        <input id="onlyChangedToggle" type="checkbox">
+                        <span>Only changed</span>
+                    </label>
+                    <div id="changeSummary" class="change-summary">No recent change</div>
+                </div>
+                <div id="devicesList" class="cards devices section"></div>
+            </div>
+            <div class="panel section">
+                <h2>仪表显示区</h2>
+                <div class="hint">显示总览返回的 instruments，例如 T3_RIT01 / B1_LIT01 / B1_FIT01。</div>
+                <div id="instrumentsList" class="cards parameters section"></div>
+            </div>
+            <div class="panel section">
+                <h2>总览 JSON</h2>
+                <textarea id="overviewJson" readonly placeholder="读取总览后显示 JSON"></textarea>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <h2>参数 / 仪表 / 定时 / 逻辑</h2>
+                <div class="hint">按后端实际返回的 parameters 动态渲染。</div>
+                <div id="miscList" class="cards parameters section"></div>
+            </div>
+            <div class="panel section">
+                <h2>最近变动</h2>
+                <div class="hint">显示当前轮询会话中最近发生变化的点位。</div>
+                <div id="changeFeed" class="change-feed section"></div>
+            </div>
+            <div class="panel section">
+                <h2>请求日志</h2>
+                <textarea id="requestLog" readonly placeholder="显示请求与响应日志"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/debug-auth.js"></script>
+<script>
+    const moduleConfigs = [
+        { key: "b1", label: "B1", frequency: false },
+        { key: "h1", label: "H1", frequency: true },
+        { key: "m3", label: "M3", frequency: true }
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    let lastCatalog = null;
+    let lastOverview = null;
+    let pollTimer = null;
+    let previousValueMap = {};
+    let currentValueMap = {};
+    let changeEvents = [];
+
+    init();
+
+    function init() {
+        moduleConfigs.forEach((item) => {
+            const option = document.createElement("option");
+            option.value = item.key;
+            option.textContent = item.label + " / " + item.key;
+            $("moduleSelect").appendChild(option);
+        });
+        $("moduleSelect").addEventListener("change", onModuleChange);
+        $("loadOverviewBtn").addEventListener("click", loadAll);
+        $("startPollBtn").addEventListener("click", startPolling);
+        $("stopPollBtn").addEventListener("click", stopPolling);
+        $("readDeviceBtn").addEventListener("click", readSelectedDevice);
+        $("writeManualBtn").addEventListener("click", writeManualMode);
+        $("pulseBtn").addEventListener("click", pulseCommand);
+        $("writeFrequencyBtn").addEventListener("click", writeFrequency);
+        $("writeParameterBtn").addEventListener("click", writeParameter);
+        $("parameterCode").addEventListener("change", refreshParameterEditor);
+        $("onlyChangedToggle").addEventListener("change", renderCommon);
+        onModuleChange();
+    }
+
+    function currentModule() {
+        return moduleConfigs.find((item) => item.key === $("moduleSelect").value) || moduleConfigs[0];
+    }
+
+    function moduleBase() {
+        return "/api/plc/" + currentModule().key;
+    }
+
+    function onModuleChange() {
+        stopPolling();
+        lastCatalog = null;
+        lastOverview = null;
+        previousValueMap = {};
+        currentValueMap = {};
+        changeEvents = [];
+        $("activeModuleText").textContent = currentModule().label + " / " + currentModule().key;
+        $("overviewJson").value = "";
+        $("devicesList").innerHTML = "";
+        $("instrumentsList").innerHTML = "";
+        $("miscList").innerHTML = "";
+        $("changeFeed").innerHTML = "";
+        $("changeSummary").textContent = "No recent change";
+        $("onlyChangedToggle").checked = false;
+        renderMeta({});
+        fillSelect($("deviceCode"), [], "请先读取总览后选择设备");
+        fillSelect($("parameterCode"), [], "请先读取总览后选择参数");
+        $("writeFrequencyBtn").disabled = !currentModule().frequency;
+        $("frequencyValue").disabled = !currentModule().frequency;
+        refreshParameterEditor();
+    }
+
+    async function loadAll() {
+        try {
+            await loadCatalog();
+            await loadOverview();
+        } catch (error) {
+            logLine("ERR " + error.message);
+        }
+    }
+
+    async function loadCatalog() {
+        const payload = await apiFetch(moduleBase() + "/catalog");
+        lastCatalog = payload && payload.data ? payload.data : null;
+        renderCommon();
+    }
+
+    async function loadOverview() {
+        const payload = await apiFetch(moduleBase() + "/overview");
+        lastOverview = payload && payload.data ? payload.data : null;
+        previousValueMap = currentValueMap;
+        currentValueMap = flattenOverviewValues(lastOverview);
+        collectChangeEvents(previousValueMap, currentValueMap);
+        $("overviewJson").value = JSON.stringify(lastOverview, null, 2);
+        renderCommon();
+    }
+
+    async function readSelectedDevice() {
+        const code = $("deviceCode").value;
+        if (!code) {
+            alert("请先选择设备");
+            return;
+        }
+        const payload = await apiFetch(moduleBase() + "/devices/" + encodeURIComponent(code));
+        alert(JSON.stringify(payload.data, null, 2));
+    }
+
+    async function writeManualMode() {
+        const code = $("deviceCode").value;
+        if (!code) {
+            alert("请先选择设备");
+            return;
+        }
+        const enabled = $("manualEnabled").value;
+        await apiFetch(moduleBase() + "/devices/" + encodeURIComponent(code) + "/manual-mode?enabled=" + enabled, { method: "POST" });
+        $("commandStatus").textContent = "手自动位已写入: " + enabled;
+        await loadOverview();
+    }
+
+    async function pulseCommand() {
+        const code = $("deviceCode").value;
+        if (!code) {
+            alert("请先选择设备");
+            return;
+        }
+        const pulseMs = $("pulseMs").value || "300";
+        const action = $("deviceAction").value;
+        await apiFetch(moduleBase() + "/devices/" + encodeURIComponent(code) + "/command?action=" + encodeURIComponent(action) + "&pulseMs=" + encodeURIComponent(pulseMs), { method: "POST" });
+        $("commandStatus").textContent = "动作已发送: " + action + " / " + pulseMs + "ms";
+        await loadOverview();
+    }
+
+    async function writeFrequency() {
+        const code = $("deviceCode").value;
+        const value = $("frequencyValue").value;
+        if (!currentModule().frequency) {
+            alert("当前模块不支持频率写入");
+            return;
+        }
+        if (!code) {
+            alert("请先选择设备");
+            return;
+        }
+        if (value === "") {
+            alert("请输入频率值");
+            return;
+        }
+        await apiFetch(moduleBase() + "/devices/" + encodeURIComponent(code) + "/frequency?value=" + encodeURIComponent(value), { method: "POST" });
+        await loadOverview();
+    }
+
+    async function writeParameter() {
+        const parameter = currentParameters().find((item) => item.code === $("parameterCode").value);
+        if (!parameter) {
+            alert("请先选择参数");
+            return;
+        }
+        if (!parameter.writable) {
+            alert("该参数只读，不能写入");
+            return;
+        }
+        const value = getParameterInputValue(parameter);
+        if (value === "") {
+            alert("参数值不能为空");
+            return;
+        }
+        await apiFetch(moduleBase() + "/parameters/" + encodeURIComponent(parameter.code) + "?value=" + encodeURIComponent(value), { method: "POST" });
+        await loadOverview();
+    }
+
+    function startPolling() {
+        stopPolling();
+        const interval = Math.max(500, Number($("pollInterval").value || 3000));
+        pollTimer = window.setInterval(loadOverview, interval);
+        $("pollingText").textContent = interval + " ms";
+    }
+
+    function stopPolling() {
+        if (pollTimer) {
+            window.clearInterval(pollTimer);
+            pollTimer = null;
+        }
+        $("pollingText").textContent = "未启动";
+    }
+
+    function renderCommon() {
+        const source = lastOverview || lastCatalog || {};
+        renderMeta(source.plc || {});
+        renderDevices(source.devices || [], currentCatalogDevices());
+        renderInstruments(currentInstruments());
+        renderParameters(currentParameters());
+        renderChangeFeed();
+        fillSelect($("deviceCode"), currentCatalogDevices(), "请先读取总览后选择设备");
+        fillSelect($("parameterCode"), currentParameters(), "请先读取总览后选择参数");
+        refreshParameterEditor();
+    }
+
+    function renderMeta(plc) {
+        $("metaName").textContent = plc.name || "-";
+        $("metaSeries").textContent = plc.series || "-";
+        $("metaIp").textContent = plc.ip || "-";
+        $("metaRackSlot").textContent = (plc.rack ?? "-") + " / " + (plc.slot ?? "-");
+    }
+
+    function renderDevices(overviewDevices, catalogDevices) {
+        const container = $("devicesList");
+        container.innerHTML = "";
+        const onlyChanged = $("onlyChangedToggle").checked;
+        const map = new Map();
+        (catalogDevices || []).forEach((item) => map.set(item.code, normalizeDevice(item, null)));
+        (overviewDevices || []).forEach((item) => map.set(item.code, normalizeDevice(item, map.get(item.code))));
+
+        Array.from(map.values()).forEach((device) => {
+            const changeKeys = [
+                "device:" + device.code + ":remote",
+                "device:" + device.code + ":running",
+                "device:" + device.code + ":fault",
+                "device:" + device.code + ":openPosition",
+                "device:" + device.code + ":closePosition",
+                "device:" + device.code + ":manualModeBit",
+                "device:" + device.code + ":command",
+                "device:" + device.code + ":frequencyFeedback",
+                "device:" + device.code + ":frequencySetpoint"
+            ];
+            const cardChanged = changeKeys.some((key) => hasValueChanged(key, currentValueMap[key]));
+            if (onlyChanged && !cardChanged) {
+                return;
+            }
+            const card = document.createElement("div");
+            card.className = "data-card";
+            if (cardChanged) {
+                card.classList.add("card-changed");
+            }
+            const title = document.createElement("div");
+            title.className = "data-title";
+            title.innerHTML = "<div>" + escapeHtml(device.name || device.code) + "</div><div class=\"code\">" + escapeHtml(device.code || "-") + "</div>";
+            card.appendChild(title);
+
+            const list = document.createElement("div");
+            list.className = "pair-list";
+            appendPair(list, "类型", device.type || "-");
+            appendOptionalPair(list, "远程", device.remote, "device:" + device.code + ":remote");
+            appendOptionalPair(list, "运行", device.running, "device:" + device.code + ":running");
+            appendOptionalPair(list, "故障", device.fault, "device:" + device.code + ":fault");
+            appendOptionalPair(list, "开到位", device.openPosition, "device:" + device.code + ":openPosition");
+            appendOptionalPair(list, "关到位", device.closePosition, "device:" + device.code + ":closePosition");
+            appendOptionalPair(list, "手自动位", device.manualModeBit, "device:" + device.code + ":manualModeBit");
+            appendOptionalPair(list, "命令位", device.command, "device:" + device.code + ":command");
+            if (device.frequencyFeedback !== undefined) appendPair(list, "频率反馈", formatValue(device.frequencyFeedback), hasValueChanged("device:" + device.code + ":frequencyFeedback", device.frequencyFeedback));
+            if (device.frequencySetpoint !== undefined) appendPair(list, "频率设定", formatValue(device.frequencySetpoint), hasValueChanged("device:" + device.code + ":frequencySetpoint", device.frequencySetpoint));
+            (device.tags || []).forEach((tag) => appendPair(list, tag.name || tag.role || tag.code, formatTag(tag), hasValueChanged("tag:" + device.code + ":" + (tag.code || tag.role || tag.name), formatTag(tag))));
+            card.appendChild(list);
+            container.appendChild(card);
+        });
+    }
+
+    function renderParameters(parameters) {
+        const container = $("miscList");
+        container.innerHTML = "";
+        const onlyChanged = $("onlyChangedToggle").checked;
+        (parameters || []).forEach((item) => {
+            const cardChanged = hasValueChanged("param:" + item.code + ":value", item.value);
+            if (onlyChanged && !cardChanged) {
+                return;
+            }
+            const card = document.createElement("div");
+            card.className = "data-card";
+            if (cardChanged) {
+                card.classList.add("card-changed");
+            }
+            const title = document.createElement("div");
+            title.className = "data-title";
+            title.innerHTML = "<div>" + escapeHtml(item.name || item.code) + "</div><div class=\"code\">" + escapeHtml(item.code || "-") + "</div>";
+            card.appendChild(title);
+            const list = document.createElement("div");
+            list.className = "pair-list";
+            appendPair(list, "地址", item.address || "-");
+            appendPair(list, "类型", item.type || "-");
+            appendPair(list, "读写", item.writable ? "读写" : "只读");
+            appendPair(list, "当前值", formatValue(item.value), cardChanged);
+            card.appendChild(list);
+            container.appendChild(card);
+        });
+    }
+
+    function renderInstruments(instruments) {
+        const container = $("instrumentsList");
+        container.innerHTML = "";
+        const onlyChanged = $("onlyChangedToggle").checked;
+        (instruments || []).forEach((item) => {
+            const changeKeys = [
+                "instrument:" + item.code + ":upperLimit",
+                "instrument:" + item.code + ":lowerLimit",
+                "instrument:" + item.code + ":deviation",
+                "instrument:" + item.code + ":output"
+            ];
+            const cardChanged = changeKeys.some((key) => hasValueChanged(key, currentValueMap[key]));
+            if (onlyChanged && !cardChanged) {
+                return;
+            }
+            const card = document.createElement("div");
+            card.className = "data-card";
+            if (cardChanged) {
+                card.classList.add("card-changed");
+            }
+            const title = document.createElement("div");
+            title.className = "data-title";
+            title.innerHTML = "<div>" + escapeHtml(item.name || item.code) + "</div><div class=\"code\">" + escapeHtml(item.code || "-") + "</div>";
+            card.appendChild(title);
+            const list = document.createElement("div");
+            list.className = "pair-list";
+            appendOptionalPair(list, "上限值", item.upperLimit, "instrument:" + item.code + ":upperLimit");
+            appendOptionalPair(list, "下限值", item.lowerLimit, "instrument:" + item.code + ":lowerLimit");
+            appendOptionalPair(list, "偏差值", item.deviation, "instrument:" + item.code + ":deviation");
+            appendOptionalPair(list, "输出值", item.output, "instrument:" + item.code + ":output");
+            card.appendChild(list);
+            container.appendChild(card);
+        });
+    }
+
+    function normalizeDevice(device, base) {
+        const result = Object.assign({}, base || {}, device || {});
+        result.tags = Array.isArray(device && device.tags) ? device.tags : (base && base.tags) || [];
+        return result;
+    }
+
+    function hasRenderableValue(value) {
+        return value !== undefined && value !== null;
+    }
+
+    function appendOptionalPair(container, label, value, changeKey) {
+        if (!hasRenderableValue(value)) {
+            return;
+        }
+        appendPair(container, label, formatValue(value), hasValueChanged(changeKey, value));
+    }
+
+    function currentCatalogDevices() {
+        return lastCatalog && Array.isArray(lastCatalog.devices) ? lastCatalog.devices : [];
+    }
+
+    function currentParameters() {
+        if (lastOverview && Array.isArray(lastOverview.parameters) && lastOverview.parameters.length > 0) {
+            return lastOverview.parameters;
+        }
+        return lastCatalog && Array.isArray(lastCatalog.parameters) ? lastCatalog.parameters : [];
+    }
+
+    function currentInstruments() {
+        return lastOverview && Array.isArray(lastOverview.instruments) ? lastOverview.instruments : [];
+    }
+
+    function fillSelect(select, items, placeholder) {
+        const currentValue = select.value;
+        select.innerHTML = "";
+        const option0 = document.createElement("option");
+        option0.value = "";
+        option0.textContent = placeholder;
+        select.appendChild(option0);
+        items.forEach((item) => {
+            const option = document.createElement("option");
+            option.value = item.code;
+            option.textContent = (item.name || item.code) + " / " + item.code;
+            if (item.code === currentValue) option.selected = true;
+            select.appendChild(option);
+        });
+    }
+
+    function refreshParameterEditor() {
+        const parameter = currentParameters().find((item) => item.code === $("parameterCode").value);
+        if (!parameter) {
+            $("parameterNumberWrap").style.display = "";
+            $("parameterBoolWrap").style.display = "none";
+            $("parameterValueLabel").textContent = "参数值";
+            $("parameterMetaHint").textContent = "请选择参数后写入。";
+            $("writeParameterBtn").disabled = true;
+            return;
+        }
+        const type = (parameter.type || "").toUpperCase();
+        const writable = !!parameter.writable;
+        const boolType = type === "BOOL";
+        $("parameterNumberWrap").style.display = boolType ? "none" : "";
+        $("parameterBoolWrap").style.display = boolType ? "" : "none";
+        $("parameterValueLabel").textContent = "参数值 (" + (type || "-") + ")";
+        $("parameterMetaHint").textContent = "地址: " + (parameter.address || "-") + " | 权限: " + (writable ? "读写" : "只读");
+        $("writeParameterBtn").disabled = !writable;
+    }
+
+    function getParameterInputValue(parameter) {
+        const type = (parameter.type || "").toUpperCase();
+        return type === "BOOL" ? $("parameterValueBool").value : $("parameterValueNumber").value;
+    }
+
+    async function apiFetch(url, options) {
+        const method = options && options.method ? options.method : "GET";
+        const requestOptions = Object.assign({}, options || {});
+        const headers = new Headers(requestOptions.headers || {});
+        const token = localStorage.getItem("token");
+        if (token) {
+            headers.set("Authorization", "Bearer " + token);
+        }
+        requestOptions.headers = headers;
+        logLine("REQ " + method + " " + location.origin + url);
+        const response = await fetch(url, requestOptions);
+        const text = await response.text();
+        logLine("RES " + response.status + " " + text);
+        let payload;
+        try {
+            payload = text ? JSON.parse(text) : null;
+        } catch (error) {
+            payload = text;
+        }
+        if (response.status === 401) {
+            const sessionInvalid = window.DebugAuth
+                ? await window.DebugAuth.confirmInvalid(token)
+                : false;
+            if (sessionInvalid && localStorage.getItem("token") === token) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("username");
+                window.location.href = "/#/login";
+            }
+        }
+        if (!response.ok) {
+            throw new Error(typeof payload === "string" ? payload : JSON.stringify(payload));
+        }
+        return payload;
+    }
+
+    function logLine(message) {
+        const area = $("requestLog");
+        const now = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+        area.value = "[" + now + "] " + message + "\n" + area.value;
+    }
+
+    function appendPair(container, key, value, changed) {
+        const k = document.createElement("div");
+        k.textContent = key;
+        const v = document.createElement("div");
+        if (changed) {
+            v.classList.add("value-changed");
+        }
+        if (typeof value === "string" && value.indexOf("<span") === 0) {
+            v.innerHTML = value;
+        } else {
+            v.textContent = value;
+        }
+        container.appendChild(k);
+        container.appendChild(v);
+    }
+
+    function formatTag(tag) {
+        const value = formatValue(tag.value);
+        const address = tag.address ? " @ " + escapeHtml(tag.address) : "";
+        return value + address;
+    }
+
+    function flattenOverviewValues(overview) {
+        const flat = {};
+        if (!overview) {
+            return flat;
+        }
+        (overview.devices || []).forEach((device) => {
+            flat["device:" + device.code + ":remote"] = device.remote;
+            flat["device:" + device.code + ":running"] = device.running;
+            flat["device:" + device.code + ":fault"] = device.fault;
+            flat["device:" + device.code + ":openPosition"] = device.openPosition;
+            flat["device:" + device.code + ":closePosition"] = device.closePosition;
+            flat["device:" + device.code + ":manualModeBit"] = device.manualModeBit;
+            flat["device:" + device.code + ":command"] = device.command;
+            flat["device:" + device.code + ":frequencyFeedback"] = device.frequencyFeedback;
+            flat["device:" + device.code + ":frequencySetpoint"] = device.frequencySetpoint;
+            (device.tags || []).forEach((tag) => {
+                flat["tag:" + device.code + ":" + (tag.code || tag.role || tag.name)] = formatTag(tag);
+            });
+        });
+        (overview.instruments || []).forEach((item) => {
+            flat["instrument:" + item.code + ":upperLimit"] = item.upperLimit;
+            flat["instrument:" + item.code + ":lowerLimit"] = item.lowerLimit;
+            flat["instrument:" + item.code + ":deviation"] = item.deviation;
+            flat["instrument:" + item.code + ":output"] = item.output;
+        });
+        (overview.parameters || []).forEach((item) => {
+            flat["param:" + item.code + ":value"] = item.value;
+        });
+        return flat;
+    }
+
+    function hasValueChanged(key, value) {
+        if (!lastOverview) {
+            return false;
+        }
+        if (!Object.prototype.hasOwnProperty.call(previousValueMap, key)) {
+            return false;
+        }
+        return previousValueMap[key] !== value;
+    }
+
+    function collectChangeEvents(previousMap, currentMap) {
+        const now = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+        Object.keys(currentMap || {}).forEach((key) => {
+            const previous = previousMap ? previousMap[key] : undefined;
+            const current = currentMap[key];
+            if (previous !== undefined && !Object.is(previous, current)) {
+                changeEvents.unshift({
+                    key: key,
+                    previous: displayPlainValue(previous),
+                    current: displayPlainValue(current),
+                    at: now
+                });
+            }
+        });
+        changeEvents = changeEvents.slice(0, 40);
+    }
+
+    function renderChangeFeed() {
+        const feed = $("changeFeed");
+        feed.innerHTML = "";
+        $("changeSummary").textContent = changeEvents.length ? ("最近变动：" + changeEvents.length) : "暂无变动";
+        if (!changeEvents.length) {
+            const empty = document.createElement("div");
+            empty.className = "change-empty";
+            empty.textContent = "No changed point captured yet.";
+            feed.appendChild(empty);
+            return;
+        }
+        changeEvents.forEach((item) => {
+            const row = document.createElement("div");
+            row.className = "change-item";
+            row.innerHTML =
+                "<div class=\"change-item-title\"><span>" + escapeHtml(item.key) + "</span><span>" + escapeHtml(item.at) + "</span></div>" +
+                "<div class=\"change-item-meta\">FROM: " + escapeHtml(item.previous) + "</div>" +
+                "<div class=\"change-item-meta\">TO: " + escapeHtml(item.current) + "</div>";
+            feed.appendChild(row);
+        });
+    }
+
+    function displayPlainValue(value) {
+        if (value === null || value === undefined) {
+            return "-";
+        }
+        if (typeof value === "boolean") {
+            return value ? "true / 1" : "false / 0";
+        }
+        if (typeof value === "object") {
+            return JSON.stringify(value);
+        }
+        return String(value);
+    }
+
+    function formatValue(value) {
+        if (value === true) return "<span class=\"value-true\">true / 1</span>";
+        if (value === false) return "<span class=\"value-false\">false / 0</span>";
+        if (value === null || value === undefined || value === "") return "<span class=\"value-null\">-</span>";
+        return escapeHtml(String(value));
+    }
+
+    function escapeHtml(text) {
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+</script>
+</body>
+</html>

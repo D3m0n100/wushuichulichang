@@ -1,0 +1,9 @@
+产品：荆州纪南污水厂后端运行控制中心
+版本：2026.07.10 Production UI Edition
+后端端口：8081
+数据库：MySQL / sewage_monitor
+自动备份：每天一次，保留30天
+健康检查：每15秒
+接口连续失败重启阈值：4次
+Windows启动任务：JinanWaterBackendProduction
+界面：工业主控台布局，支持125%显示缩放

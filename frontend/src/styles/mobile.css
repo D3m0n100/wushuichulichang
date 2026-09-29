@@ -1,0 +1,170 @@
+/* ========== Mobile Global Styles ========== */
+@media (max-width: 768px) {
+
+  /* Dashboard */
+  .dashboard-container {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: auto !important;
+    padding: 8px !important;
+    gap: 10px !important;
+  }
+
+  .left-panel,
+  .right-panel,
+  .middle-panel,
+  .center-panel {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 280px;
+  }
+
+  .card-item {
+    width: 100% !important;
+    margin-bottom: 8px;
+  }
+
+  /* Chart */
+  .chart-area,
+  #trendChart {
+    height: 240px !important;
+    min-height: 200px !important;
+  }
+
+  .metric-pills {
+    justify-content: center;
+  }
+
+  .pill-btn {
+    padding: 4px 10px !important;
+    font-size: 0.6875rem !important;
+  }
+
+  /* Tables */
+  .table-scroll,
+  .alarm-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table,
+  .alarm-table {
+    min-width: 500px;
+  }
+
+  /* Overview map */
+  .map-frame,
+  .overview-map {
+    min-height: 350px;
+  }
+
+  .map-image {
+    object-fit: contain !important;
+  }
+
+  /* PLC beacons */
+  .plc-beacon,
+  .plc-node {
+    transform: scale(0.85);
+  }
+
+  /* Alarm chips */
+  .alarm-stats,
+  .header-stats {
+    flex-direction: column !important;
+    gap: 6px !important;
+  }
+
+  /* Toolbar */
+  .tool-bar {
+    flex-wrap: wrap;
+  }
+
+  /* Video */
+  .video-player {
+    height: 200px !important;
+  }
+
+  /* History page */
+  .history-page {
+    padding: 8px !important;
+  }
+
+  .query-card .el-form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .query-card .el-form-item {
+    width: 100% !important;
+    margin-bottom: 8px;
+  }
+
+  /* Login/Register */
+  .login-card,
+  .register-card {
+    width: 92% !important;
+    margin: 16px auto;
+  }
+
+  .card-shell {
+    padding: 28px 24px !important;
+  }
+
+  .sys-name {
+    font-size: 1.125rem !important;
+    letter-spacing: 2px !important;
+  }
+
+  /* Touch targets */
+  button,
+  .el-button,
+  .el-button--small {
+    min-height: 38px !important;
+  }
+
+  .el-input__inner {
+    height: 38px !important;
+    line-height: 38px !important;
+  }
+
+  /* Font sizes */
+  body, .card-body, .el-table {
+    font-size: 0.8125rem !important;
+  }
+
+  .header-text, .card-title, .page-title {
+    font-size: 0.875rem !important;
+  }
+
+  /* Pump control */
+  .pump-control {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  /* 3D container */
+  .three-container,
+  .model-viewer {
+    min-height: 280px;
+  }
+
+  #renderCanvas {
+    touch-action: none;
+  }
+
+  /* Map stats */
+  .map-stats {
+    gap: 6px;
+  }
+
+  .map-stat {
+    padding: 4px 8px;
+  }
+
+  .stat-val {
+    font-size: 0.875rem;
+  }
+}

@@ -1,0 +1,872 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>粗格栅 PLC 联调</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #07111d;
+            --panel: rgba(11, 23, 40, 0.94);
+            --panel-soft: rgba(9, 18, 31, 0.82);
+            --line: rgba(61, 180, 255, 0.30);
+            --text: #dcefff;
+            --muted: #91aac8;
+            --accent: #49d2ff;
+            --good: #27d88a;
+            --warn: #f7c74b;
+            --bad: #ff687e;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", "Segoe UI", sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(circle at top, rgba(73, 210, 255, 0.16), transparent 26%),
+                linear-gradient(180deg, #08131f 0%, var(--bg) 100%);
+        }
+
+        .page {
+            width: min(1680px, calc(100vw - 28px));
+            margin: 0 auto;
+            padding: 18px 0 28px;
+        }
+
+        .hero,
+        .panel {
+            border: 1px solid var(--line);
+            background: var(--panel);
+            box-shadow: inset 0 0 24px rgba(40, 150, 235, 0.08), 0 0 18px rgba(0, 0, 0, 0.18);
+        }
+
+        .hero {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 18px 20px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: 30px;
+            letter-spacing: 1px;
+        }
+
+        .hero p {
+            margin: 8px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .hero-meta {
+            min-width: 320px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .hero-meta-item {
+            padding: 10px 12px;
+            border: 1px solid rgba(61, 180, 255, 0.18);
+            background: rgba(7, 17, 30, 0.85);
+        }
+
+        .hero-meta-item span {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 380px minmax(520px, 1fr) 430px;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .panel {
+            padding: 14px;
+            min-width: 0;
+        }
+
+        .panel h2 {
+            margin: 0 0 12px;
+            font-size: 18px;
+            color: #f2fbff;
+        }
+
+        .section {
+            margin-top: 14px;
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            width: 100%;
+            border: 1px solid rgba(61, 180, 255, 0.28);
+            background: rgba(5, 15, 28, 0.92);
+            color: var(--text);
+            outline: none;
+            font-family: inherit;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 9px 10px;
+        }
+
+        textarea {
+            min-height: 220px;
+            resize: vertical;
+            line-height: 1.45;
+        }
+
+        button {
+            width: auto;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-weight: 700;
+            background: linear-gradient(180deg, rgba(29, 128, 191, 0.96), rgba(10, 73, 116, 0.96));
+        }
+
+        button.secondary {
+            background: rgba(18, 37, 59, 0.96);
+        }
+
+        button.warn {
+            border-color: rgba(247, 199, 75, 0.55);
+            background: rgba(106, 77, 10, 0.94);
+        }
+
+        button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .meta-grid,
+        .cards,
+        .live-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .meta-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .meta-card,
+        .data-card,
+        .live-item {
+            border: 1px solid rgba(61, 180, 255, 0.22);
+            background: var(--panel-soft);
+            padding: 12px;
+            min-width: 0;
+        }
+
+        .meta-card span,
+        .data-card span,
+        .live-item span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .cards.devices {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .cards.states {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .cards.parameters {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .data-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .code {
+            color: var(--accent);
+            font-size: 12px;
+            font-family: Consolas, monospace;
+        }
+
+        .big-value {
+            font-size: 28px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+
+        .pair-list {
+            display: grid;
+            grid-template-columns: minmax(88px, 38%) minmax(0, 1fr);
+            gap: 6px 10px;
+            font-size: 13px;
+        }
+
+        .pair-list div:nth-child(odd) {
+            color: var(--muted);
+        }
+
+        .pair-list div:nth-child(even) {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            font-family: Consolas, "Microsoft YaHei", sans-serif;
+        }
+
+        .state {
+            display: inline-block;
+            padding: 2px 9px;
+            font-size: 12px;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .state.good {
+            color: var(--good);
+            border-color: rgba(39, 216, 138, 0.35);
+            background: rgba(39, 216, 138, 0.08);
+        }
+
+        .state.warn {
+            color: var(--warn);
+            border-color: rgba(247, 199, 75, 0.35);
+            background: rgba(247, 199, 75, 0.08);
+        }
+
+        .state.bad {
+            color: var(--bad);
+            border-color: rgba(255, 104, 126, 0.35);
+            background: rgba(255, 104, 126, 0.08);
+        }
+
+        .live-list {
+            max-height: 760px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .live-item-value {
+            font-size: 24px;
+            font-weight: 800;
+            margin: 4px 0 8px;
+        }
+
+        .empty {
+            padding: 14px;
+            border: 1px dashed rgba(61, 180, 255, 0.22);
+            background: rgba(5, 15, 28, 0.72);
+            color: var(--muted);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 1440px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .cards.devices,
+            .cards.states,
+            .cards.parameters,
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="hero">
+        <div>
+            <h1>粗格栅 PLC 联调</h1>
+            <p>
+                这个页面只联调粗格栅 PLC。
+                设备列表直接显示 PLC 实际读到的值，不展示“地址 / 类型”这类元信息。
+                可写项只保留这张点位表里明确可写的参数。
+            </p>
+        </div>
+        <div class="hero-meta">
+            <div class="hero-meta-item">
+                <span>当前模块</span>
+                <b>coarse-screen</b>
+            </div>
+            <div class="hero-meta-item">
+                <span>轮询状态</span>
+                <b id="pollingText">未启动</b>
+            </div>
+            <div class="hero-meta-item">
+                <span>最近刷新</span>
+                <b id="refreshText">-</b>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <div>
+            <div class="panel">
+                <h2>读取控制</h2>
+                <div class="row">
+                    <div>
+                        <label for="pollInterval">轮询间隔(ms)</label>
+                        <input id="pollInterval" type="number" value="5000" min="1000" step="100">
+                    </div>
+                    <div>
+                        <label for="parameterCode">可写参数</label>
+                        <select id="parameterCode"></select>
+                    </div>
+                </div>
+                <div class="buttons">
+                    <button id="loadOverviewBtn">读取总览</button>
+                    <button id="startPollBtn" class="warn">启动轮询</button>
+                    <button id="stopPollBtn" class="secondary">停止轮询</button>
+                </div>
+                <div class="hint">这张页面只做数据联调，不做设备脉冲控制。</div>
+            </div>
+
+            <div class="panel section">
+                <h2>参数写入</h2>
+                <label for="parameterValueNumber" id="parameterValueLabel">参数值</label>
+                <input id="parameterValueNumber" type="number" step="0.1" placeholder="请先选择参数">
+                <select id="parameterValueBool" class="hidden">
+                    <option value="true">true / 1</option>
+                    <option value="false">false / 0</option>
+                </select>
+                <div id="parameterMetaHint" class="hint">请先读取总览并选择参数。</div>
+                <div class="buttons">
+                    <button id="writeParameterBtn" disabled>写入参数</button>
+                </div>
+            </div>
+
+            <div class="panel section">
+                <h2>PLC 信息</h2>
+                <div id="plcMeta" class="meta-grid"></div>
+            </div>
+
+            <div class="panel section">
+                <h2>请求日志</h2>
+                <textarea id="requestLog" readonly placeholder="请求和响应日志"></textarea>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <h2>设备实时数据</h2>
+                <div id="deviceCards" class="cards devices"></div>
+            </div>
+
+            <div class="panel section">
+                <h2>状态开关量</h2>
+                <div id="statusCards" class="cards states"></div>
+            </div>
+
+            <div class="panel section">
+                <h2>仪表与时间参数</h2>
+                <div id="parameterCards" class="cards parameters"></div>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <h2>读取到的粗格栅 PLC 数据</h2>
+                <div class="hint">这里直接按实际返回值展示，不再优先显示地址、类型、权限。</div>
+                <div id="liveList" class="live-list"></div>
+            </div>
+
+            <div class="panel section">
+                <h2>总览 JSON</h2>
+                <textarea id="overviewJson" readonly placeholder="读取总览后显示完整 JSON"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/debug-auth.js"></script>
+<script>
+    const BASE = "/api/plc/coarse-screen";
+    const DEVICE_CODES = ["CS1", "CS2", "CS_CONVEYOR"];
+    const STATUS_CODES = ["CS1_REMOTE", "CS2_REMOTE", "CS_CONVEYOR_REMOTE", "CS_REMOTE_AUTO_START"];
+    const PARAMETER_CODES = [
+        "CS_LEVEL_UPPER",
+        "CS_LEVEL_LOWER",
+        "CS_LEVEL_OUTPUT",
+        "CS_LEVEL_HIGH_SET",
+        "CS_LEVEL_MID_SET",
+        "CS_LEVEL_LOW_SET",
+        "CS_RUN_TIME",
+        "CS_INTERVAL_TIME",
+        "CS_CONVEYOR_DELAY_TIME"
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    let lastOverview = null;
+    let lastCatalog = null;
+    let pollTimer = null;
+
+    init();
+
+    function init() {
+        $("loadOverviewBtn").addEventListener("click", loadAll);
+        $("startPollBtn").addEventListener("click", startPolling);
+        $("stopPollBtn").addEventListener("click", stopPolling);
+        $("writeParameterBtn").addEventListener("click", writeParameter);
+        $("parameterCode").addEventListener("change", refreshParameterEditor);
+        loadAll();
+    }
+
+    async function loadAll() {
+        await loadCatalog();
+        await loadOverview();
+    }
+
+    async function loadCatalog() {
+        try {
+            const payload = await apiFetch(BASE + "/catalog");
+            lastCatalog = payload && payload.data ? payload.data : null;
+            renderPlcMeta(lastCatalog);
+            updateParameterSelect(lastCatalog && lastCatalog.parameters ? lastCatalog.parameters : []);
+            refreshParameterEditor();
+        } catch (error) {
+            logLine("CATALOG ERR " + error.message);
+        }
+    }
+
+    async function loadOverview() {
+        try {
+            const payload = await apiFetch(BASE + "/overview");
+            lastOverview = payload && payload.data ? payload.data : null;
+            renderPlcMeta(lastOverview);
+            renderOverview(lastOverview);
+            $("refreshText").textContent = new Date().toLocaleTimeString();
+        } catch (error) {
+            logLine("OVERVIEW ERR " + error.message);
+        }
+    }
+
+    async function writeParameter() {
+        const parameter = selectedParameter();
+        if (!parameter) {
+            alert("请选择参数");
+            return;
+        }
+        if (!parameter.writable) {
+            alert("该参数只读，禁止写入");
+            return;
+        }
+        const value = getParameterInputValue(parameter);
+        if (value === "") {
+            alert("请输入参数值");
+            return;
+        }
+
+        await apiFetch(BASE + "/parameters/" + encodeURIComponent(parameter.code) + "?value=" + encodeURIComponent(value), {
+            method: "POST"
+        });
+        await loadOverview();
+    }
+
+    function renderPlcMeta(data) {
+        const root = $("plcMeta");
+        root.innerHTML = "";
+        const plc = data && data.plc ? data.plc : {};
+        appendMetaCard(root, "PLC", plc.name || "-");
+        appendMetaCard(root, "系列", plc.series || "-");
+        appendMetaCard(root, "IP", plc.ip || "-");
+        appendMetaCard(root, "Rack / Slot", (plc.rack ?? "-") + " / " + (plc.slot ?? "-"));
+    }
+
+    function renderOverview(data) {
+        $("overviewJson").value = data ? JSON.stringify(data, null, 2) : "";
+
+        const devices = data && data.devices ? data.devices : [];
+        const parameters = data && data.parameters ? data.parameters : [];
+
+        renderDeviceCards(devices);
+        renderStatusCards(parameters);
+        renderParameterCards(parameters);
+        renderLiveList(devices, parameters);
+
+        updateParameterSelect(parameters);
+        refreshParameterEditor();
+    }
+
+    function renderDeviceCards(devices) {
+        const root = $("deviceCards");
+        root.innerHTML = "";
+        const ordered = DEVICE_CODES.map((code) => findByCode(devices, code)).filter(Boolean);
+        if (!ordered.length) {
+            root.innerHTML = '<div class="empty">暂无设备实时数据</div>';
+            return;
+        }
+
+        ordered.forEach((device) => {
+            const card = document.createElement("div");
+            card.className = "data-card";
+            card.innerHTML =
+                '<div class="data-title"><span>' + escapeHtml(device.name || device.code) + '</span><span class="code">' + escapeHtml(device.code || "-") + '</span></div>' +
+                '<div class="big-value">' + renderRunState(device.running) + '</div>';
+
+            const pairs = document.createElement("div");
+            pairs.className = "pair-list";
+            appendPair(pairs, "故障", renderFaultState(device.fault), true);
+            if (device.tags && device.tags.length) {
+                device.tags.forEach((tag) => {
+                    appendPair(pairs, tag.name || tag.role || tag.code, formatValue(tag.value));
+                });
+            }
+            card.appendChild(pairs);
+            root.appendChild(card);
+        });
+    }
+
+    function renderStatusCards(parameters) {
+        const root = $("statusCards");
+        root.innerHTML = "";
+        const ordered = STATUS_CODES.map((code) => findByCode(parameters, code)).filter(Boolean);
+        if (!ordered.length) {
+            root.innerHTML = '<div class="empty">暂无状态开关量</div>';
+            return;
+        }
+
+        ordered.forEach((item) => {
+            const card = document.createElement("div");
+            card.className = "data-card";
+            card.innerHTML =
+                '<div class="data-title"><span>' + escapeHtml(item.name || item.code) + '</span><span class="code">' + escapeHtml(item.code || "-") + '</span></div>' +
+                '<div class="big-value">' + renderBoolState(item.value) + '</div>';
+            root.appendChild(card);
+        });
+    }
+
+    function renderParameterCards(parameters) {
+        const root = $("parameterCards");
+        root.innerHTML = "";
+        const ordered = PARAMETER_CODES.map((code) => findByCode(parameters, code)).filter(Boolean);
+        if (!ordered.length) {
+            root.innerHTML = '<div class="empty">暂无仪表与时间参数</div>';
+            return;
+        }
+
+        ordered.forEach((item) => {
+            const card = document.createElement("div");
+            card.className = "data-card";
+            const typeText = item.type ? " / " + item.type : "";
+            card.innerHTML =
+                '<div class="data-title"><span>' + escapeHtml(item.name || item.code) + '</span><span class="code">' + escapeHtml(item.code || "-") + typeText + '</span></div>' +
+                '<div class="big-value">' + escapeHtml(formatValue(item.value)) + '</div>';
+            root.appendChild(card);
+        });
+    }
+
+    function renderLiveList(devices, parameters) {
+        const root = $("liveList");
+        root.innerHTML = "";
+        const blocks = [];
+
+        devices.forEach((device) => {
+            blocks.push({
+                code: device.code,
+                name: device.name || device.code,
+                value: buildDeviceSummary(device),
+                details: device.tags || []
+            });
+        });
+
+        parameters.forEach((parameter) => {
+            blocks.push({
+                code: parameter.code,
+                name: parameter.name || parameter.code,
+                value: formatValue(parameter.value),
+                details: []
+            });
+        });
+
+        if (!blocks.length) {
+            root.innerHTML = '<div class="empty">暂无读取结果</div>';
+            return;
+        }
+
+        blocks.forEach((item) => {
+            const div = document.createElement("div");
+            div.className = "live-item";
+            div.innerHTML =
+                '<div class="data-title"><span>' + escapeHtml(item.name) + '</span><span class="code">' + escapeHtml(item.code) + '</span></div>' +
+                '<div class="live-item-value">' + escapeHtml(item.value) + '</div>';
+
+            if (item.details && item.details.length) {
+                const pairs = document.createElement("div");
+                pairs.className = "pair-list";
+                item.details.forEach((tag) => {
+                    appendPair(pairs, tag.name || tag.role || tag.code, formatValue(tag.value));
+                });
+                div.appendChild(pairs);
+            }
+
+            root.appendChild(div);
+        });
+    }
+
+    function buildDeviceSummary(device) {
+        const parts = [];
+        parts.push(device.running === true ? "运行" : device.running === false ? "停止" : "运行未知");
+        if (device.fault === true) {
+            parts.push("故障");
+        } else if (device.fault === false) {
+            parts.push("正常");
+        }
+        return parts.join(" / ");
+    }
+
+    function updateParameterSelect(items) {
+        const select = $("parameterCode");
+        const current = select.value;
+        select.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = items.length ? "请选择参数" : "请先读取总览";
+        select.appendChild(placeholder);
+
+        items.forEach((item) => {
+            const option = document.createElement("option");
+            option.value = item.code;
+            option.textContent = (item.name || item.code) + " / " + item.code;
+            select.appendChild(option);
+        });
+
+        if ([...select.options].some((option) => option.value === current)) {
+            select.value = current;
+        }
+    }
+
+    function refreshParameterEditor() {
+        const parameter = selectedParameter();
+        if (!parameter) {
+            $("parameterValueLabel").textContent = "参数值";
+            $("parameterMetaHint").textContent = "请先读取总览并选择参数。";
+            $("parameterValueBool").classList.add("hidden");
+            $("parameterValueNumber").classList.remove("hidden");
+            $("parameterValueNumber").value = "";
+            $("parameterValueNumber").placeholder = "请先选择参数";
+            $("parameterValueNumber").disabled = true;
+            $("parameterValueBool").disabled = true;
+            $("writeParameterBtn").disabled = true;
+            return;
+        }
+
+        const type = String(parameter.type || "").toUpperCase();
+        const writable = !!parameter.writable;
+        $("parameterValueLabel").textContent = "参数值 (" + (type || "-") + ")";
+        $("parameterMetaHint").textContent =
+            "名称: " + (parameter.name || "-") +
+            " | 当前值: " + formatValue(parameter.value) +
+            " | 权限: " + (writable ? "读写" : "只读");
+
+        if (type === "BOOL") {
+            $("parameterValueBool").classList.remove("hidden");
+            $("parameterValueNumber").classList.add("hidden");
+            $("parameterValueBool").value = String(parameter.value === false ? false : true);
+            $("parameterValueBool").disabled = !writable;
+            $("parameterValueNumber").disabled = true;
+        } else {
+            $("parameterValueBool").classList.add("hidden");
+            $("parameterValueNumber").classList.remove("hidden");
+            $("parameterValueNumber").step = type === "INT" ? "1" : "0.1";
+            $("parameterValueNumber").value = parameter.value == null ? "" : parameter.value;
+            $("parameterValueNumber").placeholder = writable ? "请输入数值" : "只读参数";
+            $("parameterValueNumber").disabled = !writable;
+            $("parameterValueBool").disabled = true;
+        }
+
+        $("writeParameterBtn").disabled = !writable;
+    }
+
+    function selectedParameter() {
+        const source = (lastOverview && lastOverview.parameters) || (lastCatalog && lastCatalog.parameters) || [];
+        return findByCode(source, $("parameterCode").value);
+    }
+
+    function getParameterInputValue(parameter) {
+        const type = String(parameter.type || "").toUpperCase();
+        if (type === "BOOL") {
+            return $("parameterValueBool").value;
+        }
+        return $("parameterValueNumber").value.trim();
+    }
+
+    function findByCode(items, code) {
+        if (!items || !code) {
+            return null;
+        }
+        return items.find((item) => item && item.code === code) || null;
+    }
+
+    async function apiFetch(url, options) {
+        const method = options && options.method ? options.method : "GET";
+        const requestOptions = Object.assign({}, options || {});
+        const headers = new Headers(requestOptions.headers || {});
+        const token = localStorage.getItem("token");
+        if (token) {
+            headers.set("Authorization", "Bearer " + token);
+        }
+        requestOptions.headers = headers;
+        logLine("REQ " + method + " " + location.origin + url);
+        const response = await fetch(url, requestOptions);
+        const text = await response.text();
+        logLine("RES " + response.status + " " + text);
+        let payload = null;
+        try {
+            payload = text ? JSON.parse(text) : null;
+        } catch (error) {
+            payload = text;
+        }
+        if (response.status === 401) {
+            const sessionInvalid = window.DebugAuth
+                ? await window.DebugAuth.confirmInvalid(token)
+                : false;
+            if (sessionInvalid && localStorage.getItem("token") === token) {
+                localStorage.removeItem("token");
+                localStorage.removeItem("username");
+                window.location.href = "/#/login";
+            }
+        }
+        if (!response.ok) {
+            throw new Error(typeof payload === "string" ? payload : JSON.stringify(payload));
+        }
+        return payload;
+    }
+
+    function startPolling() {
+        stopPolling();
+        const interval = Math.max(500, Number($("pollInterval").value || 3000));
+        pollTimer = setInterval(loadOverview, interval);
+        $("pollingText").textContent = interval + "ms";
+    }
+
+    function stopPolling() {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+        $("pollingText").textContent = "未启动";
+    }
+
+    function appendMetaCard(root, label, value) {
+        const card = document.createElement("div");
+        card.className = "meta-card";
+        card.innerHTML = "<span>" + escapeHtml(label) + "</span><b>" + escapeHtml(value == null ? "-" : String(value)) + "</b>";
+        root.appendChild(card);
+    }
+
+    function appendPair(root, key, value, isHtml) {
+        const k = document.createElement("div");
+        k.textContent = key;
+        const v = document.createElement("div");
+        if (isHtml) {
+            v.innerHTML = value;
+        } else {
+            v.textContent = value == null ? "-" : String(value);
+        }
+        root.appendChild(k);
+        root.appendChild(v);
+    }
+
+    function renderRunState(value) {
+        if (value === true) {
+            return '<span class="state good">运行</span>';
+        }
+        if (value === false) {
+            return '<span class="state warn">停止</span>';
+        }
+        return '<span class="state warn">未知</span>';
+    }
+
+    function renderFaultState(value) {
+        if (value === true) {
+            return '<span class="state bad">故障</span>';
+        }
+        if (value === false) {
+            return '<span class="state good">正常</span>';
+        }
+        return '<span class="state warn">未知</span>';
+    }
+
+    function renderBoolState(value) {
+        if (value === true) {
+            return '<span class="state good">1 / ON</span>';
+        }
+        if (value === false) {
+            return '<span class="state warn">0 / OFF</span>';
+        }
+        return '<span class="state warn">null</span>';
+    }
+
+    function formatValue(value) {
+        if (value === null || value === undefined) {
+            return "null";
+        }
+        return String(value);
+    }
+
+    function escapeHtml(text) {
+        return String(text)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+    }
+
+    function logLine(text) {
+        const now = new Date().toLocaleTimeString();
+        $("requestLog").value = "[" + now + "] " + text + "\n" + $("requestLog").value;
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+﻿server:
+  port: 8081
+  shutdown: graceful
+  tomcat:
+    connection-timeout: 10s
+
+spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  task:
+    scheduling:
+      pool:
+        size: 4
+  web:
+    resources:
+      static-locations: file:./web/,classpath:/static/
+
+app:
+  cors:
+    allowed-origin-patterns: http://<INTERNAL_IP>:8081,http://localhost:8081,http://<INTERNAL_IP>:8081,http://<INTERNAL_IP>:8081,http://<INTERNAL_IP>:8081
+
+auth:
+  local:
+    username: admin
+    initial-password: <REDACTED>
+    initial-password-minutes: 150
+    password: <REDACTED>
+    password-2: ${AUTH_LOCAL_PASSWORD_2_HASH}
+    password-3: ${AUTH_LOCAL_PASSWORD_3_HASH}
+    password-4: ${AUTH_LOCAL_PASSWORD_4_HASH}
+    permanent-password: <REDACTED>
+    rotation-days: 31
+    role: admin
+
+logging:
+  file:
+    name: logs/waterfactory.log
+  logback:
+    rollingpolicy:
+      max-history: 1095
+      max-file-size: 50MB
+      total-size-cap: 2GB
+
+plc:
+  coarseScreen:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  fineScreen:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  multilayerCyclone:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  pac:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  pam:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  sodiumAcetate:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  sodiumHypochlorite:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  baikeDosing:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  baikeFilterPress:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  baikeFiberDisc:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  fan:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  sludgeSilo:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  deodorization:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  rotorPump:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  b1:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  h1:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+  m3:
+    ip: <INTERNAL_IP>
+    rack: 0
+    slot: 1
+
+monitor:
+  db:
+    enabled: true
+    init-schema: false
+    schema-location: classpath:db/create_sewage_monitor_db.sql
+    url: jdbc:mysql://<INTERNAL_IP>:3306/sewage_monitor?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: <REDACTED>
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    maximum-pool-size: 5
+    poll-delay-ms: 10000
+    refresh-metrics-delay-ms: 60000
+
+safety:
+  fan-fault-interlock:
+    enabled: true
+    poll-delay-ms: 1000
+    initial-delay-ms: 5000
+
