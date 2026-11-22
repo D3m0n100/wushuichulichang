@@ -1,0 +1,20 @@
+/frontend/node_modules/
+/frontend/dist/
+
+# Original media restored from the separate asset archive.
+/frontend/public/1.mp4
+/frontend/public/AAO(1)-compress(1).glb
+/frontend/public/AAO(1)1024.glb
+/frontend/public/AAO-compress.glb
+/frontend/public/PAC及乙酸钠加药装置.max1024.glb
+/frontend/public/coarse_screen.max1024.glb
+/frontend/public/coarse_screen.max2048.glb
+/frontend/public/工艺流程图1.glb
+/frontend/public/巴氏计量槽2.glb
+/frontend/public/污泥浓缩池及储泥池.max1024.glb
+/frontend/public/滤布滤池.max1024.glb
+/frontend/public/生物除臭系统.max1024.glb
+/frontend/public/粗格栅compress.glb
+/frontend/public/细格栅及多层旋流高效沉砂池.max1024.glb
+/frontend/public/脱水车间及污泥料仓.max1024.glb
+/frontend/public/高效沉淀池.max1024.glb
